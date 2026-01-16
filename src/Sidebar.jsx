@@ -3,7 +3,7 @@ import { LogOut, FileText, StickyNote } from 'lucide-react';
 
 const Sidebar = ({ userEmail, setViewType, viewType, onLogout }) => {
   return (
-    <div className="w-64 bg-slate-900 text-white flex flex-col h-full">
+    <div className="w-64 bg-slate-900 text-white flex flex-col h-full shadow-xl">
       <div className="p-6 border-b border-slate-800">
         <h1 className="text-xl font-bold text-blue-400">Connect</h1>
         <p className="text-xs text-slate-400 mt-1 truncate">Logged as: {userEmail}</p>
@@ -13,7 +13,7 @@ const Sidebar = ({ userEmail, setViewType, viewType, onLogout }) => {
         <button 
           onClick={() => setViewType('notes')}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
-            viewType === 'notes' ? 'bg-blue-600' : 'hover:bg-slate-800'
+            viewType === 'notes' ? 'bg-blue-600' : 'hover:bg-slate-800 text-slate-300'
           }`}
         >
           <StickyNote size={20} /> My Notes
@@ -21,7 +21,7 @@ const Sidebar = ({ userEmail, setViewType, viewType, onLogout }) => {
         <button 
           onClick={() => setViewType('canvas')}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
-            viewType === 'canvas' ? 'bg-blue-600' : 'hover:bg-slate-800'
+            viewType === 'canvas' ? 'bg-blue-600' : 'hover:bg-slate-800 text-slate-300'
           }`}
         >
           <FileText size={20} /> Documents
@@ -30,8 +30,8 @@ const Sidebar = ({ userEmail, setViewType, viewType, onLogout }) => {
 
       <div className="p-4 border-t border-slate-800">
         <button 
-          onClick={onLogout} // This triggers the handleLogout in App.jsx
-          className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-400/10 rounded-xl transition"
+          onClick={onLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-400/10 rounded-xl transition font-medium"
         >
           <LogOut size={20} /> Logout
         </button>
