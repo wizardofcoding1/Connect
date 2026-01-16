@@ -1,1 +1,24 @@
 @import "tailwindcss";
+/* 1. Prevent the page from bouncing/scrolling behind the editor */
+html, body {
+  overscroll-behavior-y: contain;
+  overflow: hidden;
+  height: 100%;
+}
+
+/* 2. Hide the scrollbar for the tab row while keeping it scrollable */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 3. Adjust padding for mobile textareas */
+@media (max-width: 768px) {
+  textarea {
+    padding: 1.5rem !important; /* Smaller padding on phones */
+    font-size: 14px !important;
+  }
+}

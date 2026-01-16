@@ -5,7 +5,7 @@ const Notepad = ({ tabs, activeTabId, setActiveTabId, onAddTab, onUpdate, onDele
   const [localContent, setLocalContent] = useState("");
   const [localTitle, setLocalTitle] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true); // Internal state for Notepad theme
+  const [isDarkMode, setIsDarkMode] = useState(true);
   
   const activeNote = tabs.find(t => t.id === activeTabId);
 
@@ -26,7 +26,7 @@ const Notepad = ({ tabs, activeTabId, setActiveTabId, onAddTab, onUpdate, onDele
   return (
     <div className={`flex flex-col h-full transition-colors duration-300 ${isDarkMode ? 'bg-[#1e1e1e]' : 'bg-white'}`}>
       
-      {/* Tabs Row - Changes color based on local theme */}
+      {/* Tabs Row - Mobile Scrollable */}
       <div className={`flex items-center gap-1 p-2 border-b transition-colors ${
         isDarkMode ? 'bg-[#252526] border-[#333]' : 'bg-gray-100 border-gray-200'
       } overflow-x-auto no-scrollbar`}>
@@ -36,7 +36,7 @@ const Notepad = ({ tabs, activeTabId, setActiveTabId, onAddTab, onUpdate, onDele
             className={`flex items-center gap-2 px-3 py-1.5 border-t-2 rounded-t transition text-xs cursor-pointer shrink-0 ${
               activeTabId === tab.id 
                 ? (isDarkMode ? 'bg-[#1e1e1e] border-t-[#007acc] text-white' : 'bg-white border-t-blue-600 text-blue-600 shadow-sm') 
-                : (isDarkMode ? 'bg-[#2d2d2d] border-t-transparent text-[#969696]' : 'bg-gray-200 border-t-transparent text-gray-500 hover:bg-gray-300')
+                : (isDarkMode ? 'bg-[#2d2d2d] border-t-transparent text-[#969696] hover:bg-[#37373d]' : 'bg-gray-200 border-t-transparent text-gray-500 hover:bg-gray-300')
             }`}
             onClick={() => setActiveTabId(tab.id)}
           >
@@ -53,14 +53,14 @@ const Notepad = ({ tabs, activeTabId, setActiveTabId, onAddTab, onUpdate, onDele
         </button>
       </div>
 
-      {/* Action Bar with Notepad-only Theme Toggle */}
-      <div className={`px-4 py-2 flex justify-between border-b items-center gap-4 transition-colors ${
+      {/* Action Bar - Fixed for Mobile Scaling */}
+      <div className={`px-4 py-3 flex flex-wrap justify-between border-b items-center gap-3 transition-colors ${
         isDarkMode ? 'bg-[#252526] border-[#333]' : 'bg-white border-gray-200'
       }`}>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 flex-grow sm:flex-grow-0">
           
-          {/* THEME TOGGLE (Internal to Notepad) */}
-          <div className="flex items-center gap-2">
+          {/* Theme Toggle */}
+          <div className="flex items-center gap-2 shrink-0">
              <div 
               onClick={() => setIsDarkMode(!isDarkMode)}
               className={`relative w-12 h-6 rounded-full cursor-pointer flex items-center p-1 transition-all ${
@@ -75,29 +75,32 @@ const Notepad = ({ tabs, activeTabId, setActiveTabId, onAddTab, onUpdate, onDele
                 <Moon size={10} className={isDarkMode ? 'text-white' : 'text-gray-400'} />
               </div>
             </div>
-            <span className={`text-[10px] font-bold uppercase tracking-widest ${isDarkMode ? 'text-blue-400' : 'text-gray-400'}`}>
+            <span className={`text-[10px] font-bold uppercase tracking-widest hidden xs:block ${isDarkMode ? 'text-blue-400' : 'text-gray-400'}`}>
               {isDarkMode ? 'Dark' : 'Light'}
             </span>
           </div>
 
+          {/* Title Input */}
           <input 
             type="text"
-            className={`rounded px-3 py-1.5 text-sm font-semibold outline-none transition-colors w-48 ${
+            className={`rounded px-3 py-2 text-sm font-semibold outline-none transition-colors flex-1 min-w-[100px] sm:w-48 ${
               isDarkMode ? 'bg-[#3c3c3c] border-none text-[#ccc] focus:ring-1 focus:ring-[#007acc]' : 'bg-gray-50 border border-gray-200 text-gray-700'
             }`}
             value={localTitle}
             onChange={(e) => setLocalTitle(e.target.value)}
-            placeholder="Document Name..."
+            placeholder="Tab Name..."
           />
         </div>
 
+        {/* Save Button - Fixed with whitespace-nowrap and shrink-0 */}
         <button 
           onClick={handleManualSave}
-          className={`flex items-center gap-2 px-5 py-2 rounded font-bold text-xs transition active:scale-95 ${
+          className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-bold text-sm transition active:scale-95 shrink-0 ${
             isDarkMode ? 'bg-[#007acc] text-white hover:bg-[#005fb8]' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
           }`}
         >
-          <Save size={14} /> {isSaving ? "Syncing..." : "Save Sync"}
+          <Save size={16} /> 
+          <span className="whitespace-nowrap">{isSaving ? "Syncing..." : "Save Sync"}</span>
         </button>
       </div>
 
@@ -113,7 +116,7 @@ const Notepad = ({ tabs, activeTabId, setActiveTabId, onAddTab, onUpdate, onDele
             value={localContent}
             onChange={(e) => setLocalContent(e.target.value)}
             placeholder="Type your notes here..."
-            spellCheck={!isDarkMode}
+            spellCheck={false}
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-full opacity-20 text-gray-400">
