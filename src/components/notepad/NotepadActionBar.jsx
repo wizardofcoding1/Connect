@@ -132,19 +132,19 @@ const NotepadActionBar = ({
         </button>
 
         {/* Status Indicator (● Synced / ● Unsaved) */}
-        <div className="flex items-center gap-1.5 text-xs font-bold shrink-0">
+        <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-extrabold shrink-0">
           {isSaving ? (
-            <span className="text-blue-400 font-bold animate-pulse flex items-center gap-1">
+            <span className="text-blue-400 font-extrabold animate-pulse flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping" />
               Syncing...
             </span>
           ) : isDirty ? (
-            <span className="text-amber-400 font-bold flex items-center gap-1">
+            <span className="text-amber-400 font-extrabold flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-amber-400" />
               Unsaved
             </span>
           ) : activeNote ? (
-            <span className="text-emerald-400 font-bold flex items-center gap-1">
+            <span className="text-emerald-400 font-extrabold flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
               Synced
             </span>
@@ -156,7 +156,7 @@ const NotepadActionBar = ({
           type="button"
           onClick={onSave}
           disabled={!isDirty || isSaving || !activeNote}
-          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all duration-200 border cursor-pointer ${
+          className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs sm:text-xs font-extrabold transition-all duration-200 border cursor-pointer ${
             isDirty
               ? "bg-blue-600 hover:bg-blue-550 text-white border-blue-500 shadow-lg shadow-blue-600/25 active:scale-95"
               : "bg-blue-600/40 border-blue-500/30 text-blue-200/50 cursor-not-allowed"

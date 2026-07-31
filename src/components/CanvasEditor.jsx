@@ -204,7 +204,7 @@ const CanvasEditor = ({
 
   return (
     <div
-      className={`flex-1 flex flex-col h-full overflow-hidden transition-colors ${
+      className={`flex-1 flex flex-col h-full min-h-full overflow-hidden transition-colors ${
         isDarkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-800"
       }`}
       onDragOver={handleDragOver}
@@ -269,20 +269,20 @@ const CanvasEditor = ({
         {/* BREADCRUMB NAVIGATION BAR WHEN INSIDE A FOLDER */}
         {activeFolderId && (
           <div
-            className={`mb-6 flex items-center justify-between gap-4 p-3.5 px-5 rounded-2xl border animate-fadeIn transition-colors ${
+            className={`mb-6 flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 p-3.5 px-4 sm:px-5 rounded-2xl border animate-fadeIn transition-all shadow-md ${
               isDarkMode
-                ? "bg-slate-900/60 border-slate-800 text-slate-200"
+                ? "bg-[#070e1b]/90 border-slate-800 text-slate-200"
                 : "bg-white border-slate-200 shadow-sm text-slate-800"
             }`}
           >
-            <div className="flex items-center gap-2 text-xs font-extrabold">
+            <div className="flex items-center gap-2 text-xs font-extrabold min-w-0">
               <button
                 type="button"
                 onClick={() => {
                   setActiveFolderId(null);
                   setSearchQuery("");
                 }}
-                className={`transition cursor-pointer flex items-center gap-1 hover:underline ${
+                className={`transition cursor-pointer flex items-center gap-1 shrink-0 hover:underline ${
                   isDarkMode
                     ? "text-slate-400 hover:text-white"
                     : "text-slate-500 hover:text-slate-900"
@@ -292,15 +292,17 @@ const CanvasEditor = ({
               </button>
               <ChevronRight
                 size={14}
-                className={isDarkMode ? "text-slate-600" : "text-slate-400"}
+                className={`shrink-0 ${isDarkMode ? "text-slate-600" : "text-slate-400"}`}
               />
               <div
-                className={`flex items-center gap-1.5 ${
+                className={`flex items-center gap-1.5 min-w-0 ${
                   isDarkMode ? "text-amber-400" : "text-amber-600 font-black"
                 }`}
               >
-                <Folder size={15} />
-                <span>{activeFolder?.title || "Folder"}</span>
+                <Folder size={15} className="shrink-0" />
+                <span className="truncate max-w-[130px] sm:max-w-[240px]" title={activeFolder?.title || "Folder"}>
+                  {activeFolder?.title || "Folder"}
+                </span>
               </div>
             </div>
 
@@ -310,14 +312,15 @@ const CanvasEditor = ({
                 setActiveFolderId(null);
                 setSearchQuery("");
               }}
-              className={`py-1.5 px-3 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center gap-1.5 shrink-0 ${
+              className={`py-1.5 px-3 rounded-xl text-xs font-extrabold border transition cursor-pointer flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0 ${
                 isDarkMode
-                  ? "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700"
+                  ? "bg-slate-800/90 hover:bg-slate-700 text-slate-200 border-slate-700/80 shadow-sm"
                   : "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
               }`}
             >
               <ArrowLeft size={14} />
-              <span>Back to All Documents</span>
+              <span className="hidden xs:inline">Back to </span>
+              <span>Documents</span>
             </button>
           </div>
         )}

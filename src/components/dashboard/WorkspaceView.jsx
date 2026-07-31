@@ -37,7 +37,7 @@ const WorkspaceView = ({
 }) => {
   return (
     <div className="flex-1 overflow-y-auto flex flex-col custom-scrollbar">
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col shrink-0 min-h-[calc(100vh-3.5rem)] md:min-h-screen">
         <Suspense fallback={<SubcomponentLoader />}>
           {viewType === "notes" ? (
             <Notepad

@@ -289,7 +289,7 @@ const Notepad = ({
 
   return (
     <div
-      className={`flex-1 flex flex-col h-full overflow-hidden p-4 sm:p-6 transition-colors ${
+      className={`flex-1 flex flex-col h-full min-h-full overflow-hidden p-4 sm:p-6 transition-colors ${
         isDarkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-800"
       }`}
     >
@@ -300,7 +300,7 @@ const Notepad = ({
 
       {/* Sleek Outer Container Card for Notepad (matching Image 2) */}
       <div
-        className={`flex-1 flex flex-col h-full overflow-hidden rounded-[2rem] border shadow-2xl transition-all ${
+        className={`flex-1 flex flex-col h-full min-h-full overflow-hidden rounded-[2rem] border shadow-2xl transition-all ${
           isDarkMode
             ? "bg-[#070d18] border-slate-800/90 shadow-black/60"
             : "bg-white border-slate-200 shadow-slate-200/80"

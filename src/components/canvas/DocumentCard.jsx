@@ -152,16 +152,16 @@ const DocumentCard = ({
       <div className={codeMode ? "flex items-center gap-4 flex-1 min-w-0" : ""}>
         {!codeMode && item.type === "image" && item.url ? (
           <div
-            className={`w-full h-44 sm:h-48 rounded-2xl overflow-hidden mb-5 border flex items-center justify-center p-2 relative transition-colors ${
+            className={`w-full h-48 sm:h-56 rounded-2xl overflow-hidden mb-4 border flex items-center justify-center p-2 relative transition-all duration-300 ${
               isDarkMode
-                ? "bg-slate-950/80 border-slate-800 group-hover:border-blue-500/30"
-                : "bg-slate-100 border-slate-200 group-hover:border-blue-500/30"
+                ? "bg-slate-950/90 border-slate-800/80 group-hover:border-blue-500/40 shadow-inner"
+                : "bg-slate-100 border-slate-200 group-hover:border-blue-500/40 shadow-inner"
             }`}
           >
             <img
               src={item.url}
               alt={item.title || "Image"}
-              className="max-h-full max-w-full object-contain rounded-xl drop-shadow-md group-hover:scale-105 transition-transform duration-300"
+              className="max-h-full max-w-full object-contain rounded-xl drop-shadow-lg group-hover:scale-105 transition-all duration-300"
             />
           </div>
         ) : (
