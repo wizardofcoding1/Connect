@@ -3,14 +3,16 @@ import { Search } from "lucide-react";
 import ToastNotification from "./common/ToastNotification";
 import LinkVaultForm from "./linkvault/LinkVaultForm";
 import LinkCardItem from "./linkvault/LinkCardItem";
+import EditLinkModal from "./linkvault/EditLinkModal";
 
-const LinkVault = ({ items = [], onAddLink, onDeleteLink, isDarkMode = true }) => {
+const LinkVault = ({ items = [], onAddLink, onDeleteLink, onEditLink, isDarkMode = true }) => {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedId, setCopiedId] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [editingLink, setEditingLink] = useState(null);
 
   // Filter items for link type
   const links = useMemo(() => items.filter((i) => i.type === "link"), [items]);
@@ -102,6 +104,15 @@ const LinkVault = ({ items = [], onAddLink, onDeleteLink, isDarkMode = true }) =
         onClose={() => setNotification(null)}
       />
 
+      {onEditLink && (
+        <EditLinkModal
+          linkItem={editingLink}
+          onClose={() => setEditingLink(null)}
+          onSave={onEditLink}
+          isDarkMode={isDarkMode}
+        />
+      )}
+
       <div className="max-w-6xl mx-auto w-full">
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -170,6 +181,7 @@ const LinkVault = ({ items = [], onAddLink, onDeleteLink, isDarkMode = true }) =
                 copiedId={copiedId}
                 onCopy={handleCopy}
                 onDelete={onDeleteLink}
+                onEdit={onEditLink ? setEditingLink : undefined}
                 isDarkMode={isDarkMode}
               />
             ))}

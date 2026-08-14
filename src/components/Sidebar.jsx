@@ -56,7 +56,8 @@ const Sidebar = ({
             <button
               type="button"
               onClick={() => setIsDarkMode(!isDarkMode)}
-              className={`p-2 rounded-xl border transition-all duration-200 cursor-pointer ${
+              aria-label={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              className={`p-2 rounded-xl border transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                 isDarkMode
                   ? "bg-slate-800 border-slate-700 text-yellow-400 hover:bg-slate-750"
                   : "bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200"
@@ -85,7 +86,8 @@ const Sidebar = ({
         {/* Notes Tab */}
         <button
           onClick={() => setViewType("notes")}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-semibold text-sm group cursor-pointer ${
+          aria-current={viewType === "notes" ? "page" : undefined}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-semibold text-sm group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
             viewType === "notes"
               ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
               : isDarkMode
@@ -109,7 +111,8 @@ const Sidebar = ({
         {/* Documents Tab */}
         <button
           onClick={() => setViewType("canvas")}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-semibold text-sm group cursor-pointer ${
+          aria-current={viewType === "canvas" ? "page" : undefined}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-semibold text-sm group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
             viewType === "canvas"
               ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
               : isDarkMode
@@ -133,7 +136,8 @@ const Sidebar = ({
         {/* Saved Links Tab */}
         <button
           onClick={() => setViewType("links")}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-semibold text-sm group cursor-pointer ${
+          aria-current={viewType === "links" ? "page" : undefined}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-semibold text-sm group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
             viewType === "links"
               ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
               : isDarkMode
@@ -157,7 +161,8 @@ const Sidebar = ({
         {/* Behind the Spark Tab */}
         <button
           onClick={() => setViewType("story")}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-semibold text-sm group cursor-pointer ${
+          aria-current={viewType === "story" ? "page" : undefined}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-semibold text-sm group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
             viewType === "story"
               ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
               : isDarkMode

@@ -1,5 +1,5 @@
-import React from "react";
-import { Save, Sun, Palette } from "lucide-react";
+import React, { useCallback, useState } from "react";
+import { Save, Sun, Palette, Copy, Check } from "lucide-react";
 
 const COLOR_OPTIONS = [
   { id: "default", label: "Default", color: "inherit", bg: "bg-slate-300 border-slate-400" },
@@ -14,6 +14,7 @@ const COLOR_OPTIONS = [
 
 const NotepadActionBar = ({
   currentTitle,
+  currentContent,
   isDirty,
   isSaving,
   activeNote,
@@ -26,6 +27,19 @@ const NotepadActionBar = ({
   isDarkMode = true,
   children,
 }) => {
+  const [copiedAll, setCopiedAll] = useState(false);
+
+  const handleCopyAll = useCallback(async () => {
+    if (!currentContent) return;
+    try {
+      await navigator.clipboard.writeText(currentContent);
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy note:", err);
+    }
+  }, [currentContent]);
+
   return (
     <div
       className={`px-3 sm:px-6 py-3 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-between border-b gap-3 transition-colors ${
@@ -150,6 +164,25 @@ const NotepadActionBar = ({
             </span>
           ) : null}
         </div>
+
+        {/* Copy All Text Button */}
+        <button
+          type="button"
+          onClick={handleCopyAll}
+          disabled={!activeNote || !currentContent}
+          aria-label={copiedAll ? "Note text copied" : "Copy all note text"}
+          className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-extrabold cursor-pointer transition-all duration-200 border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
+            copiedAll
+              ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+              : isDarkMode
+              ? "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white"
+              : "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+          } ${!activeNote || !currentContent ? "opacity-40 cursor-not-allowed" : ""}`}
+          title="Copy entire note to clipboard"
+        >
+          {copiedAll ? <Check size={14} /> : <Copy size={14} />}
+          <span className="hidden sm:inline">{copiedAll ? "Copied!" : "Copy All"}</span>
+        </button>
 
         {/* Save Sync Button */}
         <button

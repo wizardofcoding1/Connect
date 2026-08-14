@@ -25,7 +25,7 @@ const Notepad = ({
     try {
       const saved = localStorage.getItem("connect_autosave_enabled");
       return saved !== null ? JSON.parse(saved) : true;
-    } catch (e) {
+    } catch {
       return true;
     }
   });
@@ -33,7 +33,7 @@ const Notepad = ({
   const [textColor, setTextColor] = useState(() => {
     try {
       return localStorage.getItem("connect_note_text_color") || "default";
-    } catch (e) {
+    } catch {
       return "default";
     }
   });
@@ -41,13 +41,17 @@ const Notepad = ({
   useEffect(() => {
     try {
       localStorage.setItem("connect_autosave_enabled", JSON.stringify(autoSaveEnabled));
-    } catch (e) {}
+    } catch {
+      // localStorage may be unavailable (private browsing, quota exceeded)
+    }
   }, [autoSaveEnabled]);
 
   useEffect(() => {
     try {
       localStorage.setItem("connect_note_text_color", textColor);
-    } catch (e) {}
+    } catch {
+      // localStorage may be unavailable (private browsing, quota exceeded)
+    }
   }, [textColor]);
 
   // Helper to compute display title (auto-naming Note 1, Note 2 if title is blank)
@@ -375,6 +379,7 @@ const Notepad = ({
         {/* HEADER ACTION BAR */}
         <NotepadActionBar
           currentTitle={currentTitle}
+          currentContent={currentContent}
           isDirty={isDirty}
           isSaving={isSaving}
           activeNote={activeNote}

@@ -92,6 +92,7 @@
 
 ### 🔗 5. Curated Link Vault
 - **Bookmark Management**: Store, tag, and categorize URLs with custom titles and 1-click copy feedback.
+- **Edit Saved Links**: Update a link's title and URL in place via a dedicated edit modal, with duplicate-title/URL protection.
 - **Night & Light Mode Polish**: High-contrast Sky Blue (`text-sky-400`) in Night Mode and Blue (`text-blue-600`) in Light Mode.
 
 ### 🚀 6. Upload Progress Console

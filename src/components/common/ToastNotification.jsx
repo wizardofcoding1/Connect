@@ -42,7 +42,11 @@ const ToastNotification = ({ notification, onClose }) => {
   };
 
   return (
-    <div className="fixed top-6 right-6 z-[200] max-w-md w-full animate-slideIn">
+    <div
+      className="fixed top-6 right-6 z-200 max-w-md w-full animate-slideIn"
+      role="status"
+      aria-live="polite"
+    >
       <div
         className={`p-4 rounded-2xl border backdrop-blur-xl shadow-2xl flex items-start gap-3.5 transition-all ${getBorderColor()}`}
       >
@@ -57,7 +61,8 @@ const ToastNotification = ({ notification, onClose }) => {
         </div>
         <button
           onClick={onClose}
-          className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition cursor-pointer shrink-0"
+          aria-label="Dismiss notification"
+          className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
         >
           <X size={16} />
         </button>

@@ -33,6 +33,7 @@ const WorkspaceView = ({
   uploadProgress,
   renameItem,
   addLinkItem,
+  editLinkItem,
   isDarkMode,
 }) => {
   return (
@@ -69,6 +70,7 @@ const WorkspaceView = ({
               items={items}
               onAddLink={addLinkItem}
               onDeleteLink={deleteItem}
+              onEditLink={editLinkItem}
               isDarkMode={isDarkMode}
             />
           ) : (

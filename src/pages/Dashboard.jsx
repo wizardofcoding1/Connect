@@ -79,7 +79,7 @@ const Dashboard = () => {
     try {
       const saved = localStorage.getItem(`connect_pinned_${user?.id}`);
       return saved ? JSON.parse(saved) : [];
-    } catch (e) {
+    } catch {
       return [];
     }
   }, [user]);
@@ -87,7 +87,9 @@ const Dashboard = () => {
   const savePinnedIds = useCallback((pinnedIds) => {
     try {
       localStorage.setItem(`connect_pinned_${user?.id}`, JSON.stringify(pinnedIds));
-    } catch (e) {}
+    } catch {
+      // localStorage may be unavailable (private browsing, quota exceeded) — pin state still lives in DB
+    }
   }, [user]);
 
   // Fetch Items on user load & set up Real-time channel
@@ -246,7 +248,11 @@ const Dashboard = () => {
       // Rollback on error
       setItems(backupItems);
       setActiveTabId(backupActiveTabId);
-      alert("Error creating note: " + e.message);
+      setNotification({
+        type: "error",
+        title: "Error Creating Note",
+        message: e.message,
+      });
     }
   }, [items, activeTabId, user, generateAutoNoteTitle]);
 
@@ -293,7 +299,11 @@ const Dashboard = () => {
     } catch (e) {
       // Rollback
       setItems(backupItems);
-      alert("Update failed: " + e.message);
+      setNotification({
+        type: "error",
+        title: "Update Failed",
+        message: e.message,
+      });
     }
   };
 
@@ -332,7 +342,11 @@ const Dashboard = () => {
       // Rollback
       setItems(backupItems);
       setActiveTabId(backupActiveTabId);
-      alert("Delete failed: " + e.message);
+      setNotification({
+        type: "error",
+        title: "Delete Failed",
+        message: e.message,
+      });
     }
   };
 
@@ -370,7 +384,11 @@ const Dashboard = () => {
       // Rollback on error
       setItems(backupItems);
       setActiveTabId(backupActiveTabId);
-      alert("Batch delete failed: " + e.message);
+      setNotification({
+        type: "error",
+        title: "Batch Delete Failed",
+        message: e.message,
+      });
     }
   };
 
@@ -407,7 +425,11 @@ const Dashboard = () => {
       await supabase.auth.signOut();
       navigate("/login", { replace: true });
     } catch (e) {
-      alert("Account deletion failed: " + e.message);
+      setNotification({
+        type: "error",
+        title: "Account Deletion Failed",
+        message: e.message,
+      });
     }
   };
 
@@ -431,9 +453,90 @@ const Dashboard = () => {
         setItems((prev) => [data[0], ...prev]);
       }
     } catch (e) {
-      alert("Error saving link: " + e.message);
+      setNotification({
+        type: "error",
+        title: "Error Saving Link",
+        message: e.message,
+      });
     }
   };
+
+  const editLinkItem = useCallback(
+    async (id, newTitle, newUrl) => {
+      const trimmedTitle = (newTitle || "").trim();
+      const trimmedUrl = (newUrl || "").trim();
+
+      if (!trimmedTitle || !trimmedUrl) {
+        setNotification({
+          type: "warning",
+          title: "Missing Fields",
+          message: "Please enter both a title and a valid URL.",
+        });
+        return;
+      }
+
+      const isDuplicateUrl = items.some(
+        (i) =>
+          i.type === "link" &&
+          i.id !== id &&
+          (i.url || "").trim().toLowerCase() === trimmedUrl.toLowerCase()
+      );
+      const isDuplicateTitle = items.some(
+        (i) =>
+          i.type === "link" &&
+          i.id !== id &&
+          (i.title || "").trim().toLowerCase() === trimmedTitle.toLowerCase()
+      );
+
+      if (isDuplicateUrl) {
+        setNotification({
+          type: "warning",
+          title: "Duplicate Link URL",
+          message: `The URL "${trimmedUrl}" is already saved in your Link Vault!`,
+        });
+        return;
+      }
+
+      if (isDuplicateTitle) {
+        setNotification({
+          type: "warning",
+          title: "Duplicate Link Title",
+          message: `A link titled "${trimmedTitle}" already exists! Please choose a unique title.`,
+        });
+        return;
+      }
+
+      const backupItems = [...items];
+      try {
+        setItems((prev) =>
+          prev.map((item) =>
+            item.id === id ? { ...item, title: trimmedTitle, url: trimmedUrl } : item
+          )
+        );
+
+        const { error } = await supabase
+          .from("items")
+          .update({ title: trimmedTitle, url: trimmedUrl })
+          .eq("id", id);
+
+        if (error) throw error;
+
+        setNotification({
+          type: "success",
+          title: "Link Updated",
+          message: `"${trimmedTitle}" was successfully updated!`,
+        });
+      } catch (e) {
+        setItems(backupItems);
+        setNotification({
+          type: "error",
+          title: "Update Failed",
+          message: e.message,
+        });
+      }
+    },
+    [items]
+  );
 
   const createFolder = async (folderTitle, parentFolderId = null) => {
     if (!user) return;
@@ -455,7 +558,11 @@ const Dashboard = () => {
         setItems((prev) => [data[0], ...prev]);
       }
     } catch (e) {
-      alert("Error creating folder: " + e.message);
+      setNotification({
+        type: "error",
+        title: "Error Creating Folder",
+        message: e.message,
+      });
     }
   };
 
@@ -566,7 +673,11 @@ const Dashboard = () => {
     } catch (e) {
       // Rollback
       setItems(backupItems);
-      alert("Rename failed: " + e.message);
+      setNotification({
+        type: "error",
+        title: "Rename Failed",
+        message: e.message,
+      });
     }
   }, [items, generateAutoNoteTitle, generateAutoDocTitle]);
 
@@ -983,6 +1094,7 @@ const Dashboard = () => {
           uploadProgress={uploadProgress}
           renameItem={renameItem}
           addLinkItem={addLinkItem}
+          editLinkItem={editLinkItem}
           isDarkMode={isDarkMode}
         />
       </main>

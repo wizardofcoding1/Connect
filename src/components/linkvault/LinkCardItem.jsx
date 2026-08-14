@@ -1,11 +1,12 @@
 import React from "react";
-import { ExternalLink, Copy, Check, Trash2 } from "lucide-react";
+import { ExternalLink, Copy, Check, Trash2, Pencil } from "lucide-react";
 
 const LinkCardItem = ({
   linkItem,
   copiedId,
   onCopy,
   onDelete,
+  onEdit,
   isDarkMode = true,
   children,
 }) => {
@@ -20,7 +21,7 @@ const LinkCardItem = ({
       }`}
     >
       <div>
-        {/* Top Row: Title + Delete Button */}
+        {/* Top Row: Title + Edit/Delete Buttons */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="min-w-0 flex-1">
             <h4
@@ -32,18 +33,36 @@ const LinkCardItem = ({
             </h4>
           </div>
 
-          <button
-            type="button"
-            onClick={() => onDelete(linkItem.id)}
-            className={`p-1.5 rounded-xl transition cursor-pointer shrink-0 ${
-              isDarkMode
-                ? "text-slate-400 hover:text-red-400 hover:bg-red-500/10"
-                : "text-slate-500 hover:text-red-600 hover:bg-red-50"
-            }`}
-            title="Delete Link"
-          >
-            <Trash2 size={15} />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            {onEdit && (
+              <button
+                type="button"
+                onClick={() => onEdit(linkItem)}
+                aria-label={`Edit ${linkItem.title || "link"}`}
+                className={`p-1.5 rounded-xl transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                  isDarkMode
+                    ? "text-slate-400 hover:text-blue-400 hover:bg-blue-500/10"
+                    : "text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+                }`}
+                title="Edit Link"
+              >
+                <Pencil size={15} />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => onDelete(linkItem.id)}
+              aria-label={`Delete ${linkItem.title || "link"}`}
+              className={`p-1.5 rounded-xl transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${
+                isDarkMode
+                  ? "text-slate-400 hover:text-red-400 hover:bg-red-500/10"
+                  : "text-slate-500 hover:text-red-600 hover:bg-red-50"
+              }`}
+              title="Delete Link"
+            >
+              <Trash2 size={15} />
+            </button>
+          </div>
         </div>
 
         {/* URL Box */}
@@ -65,7 +84,8 @@ const LinkCardItem = ({
         <button
           type="button"
           onClick={() => onCopy(linkItem)}
-          className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-extrabold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer border ${
+          aria-label={isCopied ? "Link copied to clipboard" : `Copy ${linkItem.title || "link"} URL`}
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-extrabold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
             isCopied
               ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-lg shadow-emerald-500/10 scale-[1.02]"
               : isDarkMode
@@ -82,7 +102,8 @@ const LinkCardItem = ({
             href={linkItem.url.startsWith("http") ? linkItem.url : `https://${linkItem.url}`}
             target="_blank"
             rel="noopener noreferrer"
-            className={`p-2.5 rounded-xl transition cursor-pointer shrink-0 border ${
+            aria-label={`Open ${linkItem.title || "link"} in new tab`}
+            className={`p-2.5 rounded-xl transition cursor-pointer shrink-0 border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${
               isDarkMode
                 ? "text-slate-400 hover:text-sky-400 bg-slate-800/60 hover:bg-slate-800 border-slate-700/80"
                 : "text-slate-500 hover:text-blue-600 bg-slate-100 hover:bg-slate-200 border-slate-200"
