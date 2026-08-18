@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Plus, Search } from "lucide-react";
+﻿import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { Plus, Search, X, Clipboard, Check, Terminal, FileText, Code, FileSpreadsheet, Printer, Download, Share2 } from "lucide-react";
+import { supabase } from "../supabaseClient";
 import ToastNotification from "./common/ToastNotification";
 import NotepadTabItem from "./notepad/NotepadTabItem";
 import NotepadActionBar from "./notepad/NotepadActionBar";
@@ -20,6 +21,14 @@ const Notepad = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [editingTabId, setEditingTabId] = useState(null);
   const [notification, setNotification] = useState(null);
+
+  // Sharing states
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareModalData, setShareModalData] = useState(null); // { code, url, title }
+  const [selectedShareFormat, setSelectedShareFormat] = useState("txt");
+  const [selectedShareShell, setSelectedShareShell] = useState("bash");
+  const [copiedCmd, setCopiedCmd] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(() => {
     try {
@@ -291,6 +300,207 @@ const Notepad = ({
     [tabs, drafts, getTabTitle, onUpdate]
   );
 
+  // Generate 4-character typo-safe alphanumeric code
+  const generateShortCode = useCallback(() => {
+    const chars = "23456789ABCDEFGHJKMNPQRSTWXYZ";
+    let code = "";
+    for (let i = 0; i < 4; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  }, []);
+
+  // Upload share file to Supabase Public Bucket with expiration header
+  const handleShareToTerminal = useCallback(async () => {
+    if (!activeNote || isSharing) return;
+    setIsSharing(true);
+
+    const title = getTabTitle(activeNote, tabs, drafts);
+    const content = drafts[activeNote.id]?.content !== undefined ? drafts[activeNote.id].content : activeNote.content || "";
+
+    const code = generateShortCode();
+    const expireDate = new Date();
+    expireDate.setDate(expireDate.getDate() + 7); // 7 days expiration limit
+
+    const fileContent = `CONNECT_SHARE_EXPIRE: ${expireDate.toISOString()}\n${content}`;
+    const blob = new Blob([fileContent], { type: "text/plain;charset=utf-8" });
+    const file = new File([blob], `${code}.txt`, { type: "text/plain;charset=utf-8" });
+
+    try {
+      const { error } = await supabase.storage
+        .from("documents")
+        .upload(`shares/${code}.txt`, file);
+
+      if (error) throw error;
+
+      const publicUrl = `https://crosser.vercel.app/t/${code}`;
+      setShareModalData({
+        code,
+        url: publicUrl,
+        title,
+      });
+      setSelectedShareFormat("txt");
+      setSelectedShareShell("bash");
+      setNotification({
+        type: "success",
+        title: "CLI Share Ready",
+        message: "Upload complete! Code generated.",
+      });
+    } catch (err) {
+      console.error("Upload share error:", err);
+      setNotification({
+        type: "error",
+        title: "Share Failed",
+        message: err.message || "Failed to upload file to storage.",
+      });
+    } finally {
+      setIsSharing(false);
+    }
+  }, [activeNote, isSharing, generateShortCode, getTabTitle, tabs, drafts]);
+
+  // Handle local exports from browser
+  const handleDownloadNote = useCallback((format) => {
+    if (!activeNote) return;
+    const title = getTabTitle(activeNote, tabs, drafts);
+    const content = drafts[activeNote.id]?.content !== undefined ? drafts[activeNote.id].content : activeNote.content || "";
+    const filename = `${title.replace(/[\s\W]+/g, "_")}.${format}`;
+
+    if (format === "txt") {
+      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } else if (format === "md") {
+      const mdContent = `# ${title}\n\n${content}`;
+      const blob = new Blob([mdContent], { type: "text/markdown;charset=utf-8" });
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } else if (format === "docx") {
+      const htmlContent = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; color: #1e293b; line-height: 1.6; }
+            h1 { color: #1e3a8a; font-size: 24px; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; margin-bottom: 16px; }
+            p { font-size: 14px; white-space: pre-wrap; }
+          </style>
+        </head>
+        <body>
+          <h1>${title}</h1>
+          <p>${content.replace(/\n/g, "<br/>")}</p>
+        </body>
+        </html>
+      `;
+      const blob = new Blob([htmlContent], { type: "application/msword;charset=utf-8" });
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } else if (format === "xlsx") {
+      const rows = content.split("\n");
+      const tableRows = rows.map((row) => `<tr><td>${row}</td></tr>`).join("");
+      const excelContent = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:x='urn:schemas-microsoft-com:office:excel' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+          <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>${title.slice(0, 30)}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+        </head>
+        <body>
+          <table>
+            <thead>
+              <tr><th style="font-weight:bold;background-color:#cbd5e1;text-align:left;">${title}</th></tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+        </body>
+        </html>
+      `;
+      const blob = new Blob([excelContent], { type: "application/vnd.ms-excel;charset=utf-8" });
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } else if (format === "pdf") {
+      const printWindow = window.open("", "_blank");
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>${title}</title>
+              <style>
+                body { font-family: system-ui, -apple-system, sans-serif; padding: 40px; color: #1e293b; line-height: 1.7; }
+                h1 { color: #1d4ed8; font-size: 28px; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 24px; }
+                p { white-space: pre-wrap; font-size: 14px; }
+              </style>
+            </head>
+            <body>
+              <h1>${title}</h1>
+              <p>${content}</p>
+              <script>
+                window.onload = function() {
+                  window.print();
+                  window.close();
+                }
+              </script>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+      }
+    }
+  }, [activeNote, tabs, drafts, getTabTitle]);
+
+  // Compute live command
+  const getShareCommand = useCallback((code, format, shell) => {
+    const extension = format === "txt" ? "" : `.${format}`;
+    const url = `https://crosser.vercel.app/t/${code}${extension}`;
+    const filename = `note_${code.toLowerCase()}.${format}`;
+
+    if (shell === "bash") {
+      return `curl -sL ${url} > ${filename}`;
+    }
+    if (shell === "powershell") {
+      return `Invoke-RestMethod -Uri ${url} -OutFile ${filename}`;
+    }
+    if (shell === "cmd") {
+      return `curl -sL ${url} -o ${filename}`;
+    }
+    return `curl -sL ${url} > ${filename}`;
+  }, []);
+
+  const handleCopyCmd = useCallback((cmdText) => {
+    navigator.clipboard.writeText(cmdText);
+    setCopiedCmd(true);
+    setTimeout(() => setCopiedCmd(false), 2000);
+  }, []);
+
+  const handleCopyLink = useCallback((linkText) => {
+    navigator.clipboard.writeText(linkText);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  }, []);
+
   return (
     <div
       className={`flex-1 flex flex-col h-full min-h-full overflow-hidden p-4 sm:p-6 transition-colors ${
@@ -302,7 +512,7 @@ const Notepad = ({
         onClose={() => setNotification(null)}
       />
 
-      {/* Sleek Outer Container Card for Notepad (matching Image 2) */}
+      {/* Sleek Outer Container Card for Notepad */}
       <div
         className={`flex-1 flex flex-col h-full min-h-full overflow-hidden rounded-[2rem] border shadow-2xl transition-all ${
           isDarkMode
@@ -350,7 +560,7 @@ const Notepad = ({
                   ? "bg-slate-800/60 hover:bg-slate-800 text-slate-300 border-slate-700/60"
                   : "bg-white hover:bg-slate-200 text-slate-600 border-slate-300 shadow-sm"
               }`}
-              title="Create New Note (Auto-names Note 1, Note 2 if empty)"
+              title="Create New Note"
             >
               <Plus size={16} />
             </button>
@@ -390,6 +600,9 @@ const Notepad = ({
           textColor={textColor}
           onTextColorChange={setTextColor}
           isDarkMode={isDarkMode}
+          onDownload={handleDownloadNote}
+          onShare={handleShareToTerminal}
+          isSharing={isSharing}
         />
 
         {/* TEXTAREA EDITOR BODY */}
@@ -435,6 +648,148 @@ const Notepad = ({
                 Delete
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* SHARE TO TERMINAL MODAL */}
+      {shareModalData && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800/80 p-6 md:p-8 rounded-[2.5rem] shadow-2xl max-w-lg w-full text-left animate-zoomIn text-slate-100 flex flex-col relative select-text">
+            
+            <button
+              onClick={() => setShareModalData(null)}
+              className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition duration-200 cursor-pointer"
+              title="Close Panel"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-blue-600/10 border border-blue-500/25 text-blue-400 rounded-2xl">
+                <Terminal size={22} />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-white">Share to Terminal</h3>
+                <p className="text-slate-400 text-[11px] font-semibold mt-0.5 uppercase tracking-wider">
+                  Sync document to secondary devices
+                </p>
+              </div>
+            </div>
+
+            {/* FORMAT CHOOSER */}
+            <div className="mb-5">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-2">
+                1. Select Export Format
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {["txt", "md", "docx", "xlsx", "pdf"].map((fmt) => {
+                  const isActive = selectedShareFormat === fmt;
+                  return (
+                    <button
+                      key={fmt}
+                      type="button"
+                      onClick={() => setSelectedShareFormat(fmt)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer uppercase ${
+                        isActive
+                          ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                          : "bg-slate-950 border border-slate-850 hover:bg-slate-800 text-slate-300"
+                      }`}
+                    >
+                      {fmt}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* SHELL CHOOSER */}
+            <div className="mb-5">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-2">
+                2. Select Terminal Shell
+              </label>
+              <div className="flex gap-2">
+                {[
+                  { id: "bash", label: "Bash (Mac/Linux)" },
+                  { id: "powershell", label: "PowerShell (Windows)" },
+                  { id: "cmd", label: "Command Prompt (CMD)" },
+                ].map((sh) => {
+                  const isActive = selectedShareShell === sh.id;
+                  return (
+                    <button
+                      key={sh.id}
+                      type="button"
+                      onClick={() => setSelectedShareShell(sh.id)}
+                      className={`flex-1 px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                        isActive
+                          ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                          : "bg-slate-950 border border-slate-850 hover:bg-slate-800 text-slate-300"
+                      }`}
+                    >
+                      {sh.label.split(" ")[0]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* SYNC COMMAND */}
+            <div className="mb-5">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-2">
+                3. Run CLI command on target device
+              </label>
+              <div className="flex items-center gap-2 bg-slate-950 border border-slate-850 p-4 rounded-2xl select-text relative font-mono text-xs text-blue-300 leading-relaxed shadow-inner max-w-full overflow-x-auto">
+                <span className="whitespace-pre">
+                  {getShareCommand(shareModalData.code, selectedShareFormat, selectedShareShell)}
+                </span>
+                <button
+                  onClick={() =>
+                    handleCopyCmd(
+                      getShareCommand(shareModalData.code, selectedShareFormat, selectedShareShell)
+                    )
+                  }
+                  className={`p-2 rounded-xl border shrink-0 transition ml-auto cursor-pointer ${
+                    copiedCmd
+                      ? "bg-emerald-600/10 border-emerald-500/30 text-emerald-400"
+                      : "bg-slate-900 border-slate-800 hover:bg-slate-850 text-slate-400 hover:text-white"
+                  }`}
+                  title="Copy command to clipboard"
+                >
+                  {copiedCmd ? <Check size={14} /> : <Clipboard size={14} />}
+                </button>
+              </div>
+            </div>
+
+            {/* SHORT URL */}
+            <div className="mb-6">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-2">
+                Short share URL
+              </label>
+              <div className="flex items-center gap-2 bg-slate-950 border border-slate-850 px-4 py-3 rounded-2xl select-text font-mono text-xs text-slate-300">
+                <span className="truncate">{`${shareModalData.url}${selectedShareFormat === "txt" ? "" : `.${selectedShareFormat}`}`}</span>
+                <button
+                  onClick={() =>
+                    handleCopyLink(
+                      `${shareModalData.url}${selectedShareFormat === "txt" ? "" : `.${selectedShareFormat}`}`
+                    )
+                  }
+                  className={`p-2 rounded-xl border shrink-0 transition ml-auto cursor-pointer ${
+                    copiedLink
+                      ? "bg-emerald-600/10 border-emerald-500/30 text-emerald-400"
+                      : "bg-slate-900 border-slate-800 hover:bg-slate-850 text-slate-400 hover:text-white"
+                  }`}
+                  title="Copy link to clipboard"
+                >
+                  {copiedLink ? <Check size={14} /> : <Clipboard size={14} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-850 pt-4 flex items-center justify-between text-[10px] text-slate-500 font-extrabold uppercase tracking-widest">
+              <span>Expires automatically in 7 days</span>
+              <span className="text-yellow-500/70">Secure Code: {shareModalData.code}</span>
+            </div>
+
           </div>
         </div>
       )}

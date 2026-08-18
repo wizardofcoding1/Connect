@@ -1,15 +1,13 @@
-import React, { useCallback, useState } from "react";
-import { Save, Sun, Palette, Copy, Check } from "lucide-react";
+﻿import React, { useState, useCallback, useRef, useEffect } from "react";
+import { Sun, Palette, Copy, Check, Save, Download, ChevronDown, FileText, Code, FileSpreadsheet, Printer, Terminal } from "lucide-react";
 
 const COLOR_OPTIONS = [
-  { id: "default", label: "Default", color: "inherit", bg: "bg-slate-300 border-slate-400" },
-  { id: "#38bdf8", label: "Electric Blue", color: "#38bdf8", bg: "bg-sky-400 border-sky-300" },
-  { id: "#34d399", label: "Emerald Green", color: "#34d399", bg: "bg-emerald-400 border-emerald-300" },
-  { id: "#fbbf24", label: "Amber Gold", color: "#fbbf24", bg: "bg-amber-400 border-amber-300" },
-  { id: "#c084fc", label: "Neon Purple", color: "#c084fc", bg: "bg-purple-400 border-purple-300" },
-  { id: "#f472b6", label: "Rose Pink", color: "#f472b6", bg: "bg-pink-400 border-pink-300" },
-  { id: "#fb7185", label: "Coral Red", color: "#fb7185", bg: "bg-rose-400 border-rose-300" },
-  { id: "#22d3ee", label: "Cyan", color: "#22d3ee", bg: "bg-cyan-400 border-cyan-300" },
+  { id: "default", label: "Default", bg: "bg-slate-400" },
+  { id: "blue", label: "Blue", bg: "bg-blue-500" },
+  { id: "emerald", label: "Emerald", bg: "bg-emerald-500" },
+  { id: "amber", label: "Amber", bg: "bg-amber-500" },
+  { id: "rose", label: "Rose", bg: "bg-rose-500" },
+  { id: "purple", label: "Purple", bg: "bg-purple-500" },
 ];
 
 const NotepadActionBar = ({
@@ -25,9 +23,14 @@ const NotepadActionBar = ({
   textColor = "default",
   onTextColorChange,
   isDarkMode = true,
+  onDownload,
+  onShare,
+  isSharing,
   children,
 }) => {
   const [copiedAll, setCopiedAll] = useState(false);
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const menuRef = useRef(null);
 
   const handleCopyAll = useCallback(async () => {
     if (!currentContent) return;
@@ -39,6 +42,17 @@ const NotepadActionBar = ({
       console.error("Failed to copy note:", err);
     }
   }, [currentContent]);
+
+  // Click outside to close download dropdown
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowDownloadMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div
@@ -79,7 +93,7 @@ const NotepadActionBar = ({
           disabled={!activeNote}
         />
 
-        {/* Text Color Swatches (Always visible on ALL screen sizes!) */}
+        {/* Text Color Swatches */}
         <div
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl border shrink-0 max-w-full overflow-x-auto custom-scrollbar transition-colors ${
             isDarkMode
@@ -114,8 +128,8 @@ const NotepadActionBar = ({
         {children}
       </div>
 
-      {/* Right Row: Auto Save Toggle + Status (Synced/Unsaved) + Save Sync Button */}
-      <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-800/40">
+      {/* Right Row: Auto Save Toggle + Status (Synced/Unsaved) + Actions */}
+      <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-800/40">
         {/* Auto Save Toggle Switch */}
         <button
           type="button"
@@ -145,8 +159,8 @@ const NotepadActionBar = ({
           </div>
         </button>
 
-        {/* Status Indicator (● Synced / ● Unsaved) */}
-        <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-extrabold shrink-0">
+        {/* Status Indicator */}
+        <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-extrabold shrink-0 mr-1">
           {isSaving ? (
             <span className="text-blue-400 font-extrabold animate-pulse flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping" />
@@ -181,7 +195,88 @@ const NotepadActionBar = ({
           title="Copy entire note to clipboard"
         >
           {copiedAll ? <Check size={14} /> : <Copy size={14} />}
-          <span className="hidden sm:inline">{copiedAll ? "Copied!" : "Copy All"}</span>
+          <span className="hidden sm:inline">{copiedAll ? "Copied!" : "Copy"}</span>
+        </button>
+
+        {/* Export / Download Dropdown Menu */}
+        <div className="relative shrink-0" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setShowDownloadMenu((prev) => !prev)}
+            disabled={!activeNote}
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-extrabold cursor-pointer transition-all duration-200 border ${
+              showDownloadMenu
+                ? "bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-600/25"
+                : isDarkMode
+                ? "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white"
+                : "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+            } ${!activeNote ? "opacity-40 cursor-not-allowed" : ""}`}
+            title="Download Note to Local formats"
+          >
+            <Download size={14} />
+            <span>Export</span>
+            <ChevronDown size={11} className={`transition-transform duration-200 ${showDownloadMenu ? "rotate-180" : ""}`} />
+          </button>
+
+          {showDownloadMenu && (
+            <div
+              className={`absolute right-0 mt-2 w-44 rounded-2xl border shadow-xl z-50 overflow-hidden animate-slideIn ${
+                isDarkMode
+                  ? "bg-[#0c1424]/95 border-slate-800 text-white backdrop-blur-xl shadow-black/45"
+                  : "bg-white border-slate-200 text-slate-800 shadow-slate-200/50"
+              }`}
+            >
+              {[
+                { id: "txt", label: "Plain Text (.txt)", icon: <FileText size={13} /> },
+                { id: "md", label: "Markdown (.md)", icon: <Code size={13} /> },
+                { id: "docx", label: "Word Doc (.docx)", icon: <FileText size={13} /> },
+                { id: "xlsx", label: "Excel Sheet (.xlsx)", icon: <FileSpreadsheet size={13} /> },
+                { id: "pdf", label: "Print / PDF (.pdf)", icon: <Printer size={13} /> },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    onDownload(item.id);
+                    setShowDownloadMenu(false);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+                    isDarkMode ? "hover:bg-slate-800/80 text-slate-300 hover:text-white" : "hover:bg-slate-100 text-slate-700"
+                  }`}
+                >
+                  <span className="text-slate-400 shrink-0">{item.icon}</span>
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Share to Terminal CLI Button */}
+        <button
+          type="button"
+          onClick={onShare}
+          disabled={!activeNote || isSharing}
+          className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all duration-200 border cursor-pointer ${
+            isSharing
+              ? "bg-slate-900 border-slate-800 text-slate-400 font-extrabold animate-pulse"
+              : isDarkMode
+              ? "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white"
+              : "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+          } ${!activeNote ? "opacity-40 cursor-not-allowed" : ""}`}
+          title="Share note as copyable CLI command for secondary devices"
+        >
+          {isSharing ? (
+            <>
+              <span className="w-3 h-3 border-2 border-slate-400/30 border-t-slate-400 rounded-full animate-spin"></span>
+              <span>Syncing...</span>
+            </>
+          ) : (
+            <>
+              <Terminal size={14} />
+              <span>Share CLI</span>
+            </>
+          )}
         </button>
 
         {/* Save Sync Button */}
@@ -197,7 +292,7 @@ const NotepadActionBar = ({
           title="Save Note Sync (Ctrl+S)"
         >
           <Save size={14} />
-          <span>Save Sync</span>
+          <span>Save</span>
         </button>
       </div>
     </div>

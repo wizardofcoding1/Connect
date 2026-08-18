@@ -1,8 +1,16 @@
-{
+﻿{
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/((?!.*\\.(?:js|css|png|jpg|jpeg|gif|svg|ico|xml|txt|html)$).*)",
+      "source": "/t/:code.:ext",
+      "destination": "/api/t?code=:code&ext=:ext"
+    },
+    {
+      "source": "/t/:code",
+      "destination": "/api/t?code=:code"
+    },
+    {
+      "source": "/((?!api/|static/|google.*\\.html|sitemap\\.xml|robots\\.txt).*)",
       "destination": "/index.html"
     }
   ]
