@@ -478,13 +478,13 @@ const Notepad = ({
     const filename = `note_${code.toLowerCase()}.${format}`;
 
     if (shell === "bash") {
-      return `curl -sL ${url} > ${filename}`;
+      return `curl -sL ${url} > ${filename} && echo -e "\\n\\x1b[35m[!] Classified data synchronized successfully... 😈\\x1b[0m"`;
     }
     if (shell === "powershell") {
-      return `Invoke-RestMethod -Uri ${url} -OutFile ${filename}`;
+      return `Invoke-RestMethod -Uri ${url} -OutFile ${filename}; Write-Host "[!] Classified data synchronized successfully... 😈" -ForegroundColor Cyan`;
     }
     if (shell === "cmd") {
-      return `curl -sL ${url} -o ${filename}`;
+      return `curl -sL ${url} -o ${filename} && echo [!] Classified data synchronized successfully... 😈`;
     }
     return `curl -sL ${url} > ${filename}`;
   }, []);
