@@ -38,7 +38,7 @@ const WorkspaceView = ({
 }) => {
   return (
     <div className="flex-1 overflow-y-auto flex flex-col custom-scrollbar">
-      <div className="flex-1 flex flex-col shrink-0 min-h-[calc(100vh-3.5rem)] md:min-h-screen">
+      <div className="flex-none flex flex-col min-h-[calc(100vh-3.5rem)] md:min-h-screen">
         <Suspense fallback={<SubcomponentLoader />}>
           {viewType === "notes" ? (
             <Notepad
@@ -80,7 +80,9 @@ const WorkspaceView = ({
       </div>
 
       {/* FOOTER COMPONENT WITH SOCIAL LINKS & COLLABORATION QUOTE */}
-      <Footer isDarkMode={isDarkMode} />
+      <div className="shrink-0">
+        <Footer isDarkMode={isDarkMode} />
+      </div>
     </div>
   );
 };

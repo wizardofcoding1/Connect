@@ -95,7 +95,7 @@ const LinkVault = ({ items = [], onAddLink, onDeleteLink, onEditLink, isDarkMode
 
   return (
     <div
-      className={`flex-1 flex flex-col h-full overflow-y-auto custom-scrollbar p-6 transition-colors ${
+      className={`flex flex-col min-h-[calc(100vh-3.5rem)] md:min-h-screen p-6 transition-colors ${
         isDarkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-800"
       }`}
     >

@@ -56,14 +56,14 @@ const NotepadActionBar = ({
 
   return (
     <div
-      className={`px-3 sm:px-6 py-3 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-between border-b gap-3 transition-colors ${
+      className={`px-3 sm:px-6 py-3 flex flex-col items-stretch border-b gap-3 transition-colors ${
         isDarkMode ? "bg-[#070d18] border-slate-800/80 text-white" : "bg-white border-slate-200"
       }`}
     >
       {/* Upper/Left Row: Sun Icon + Title Input + Color Palette */}
-      <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
+      <div className="flex flex-wrap items-center gap-2.5 w-full min-w-0">
         {/* Sun Indicator Icon */}
-        <div
+        {/* <div
           className={`p-2 rounded-xl border shrink-0 ${
             isDarkMode
               ? "bg-slate-900 border-slate-800 text-amber-400 shadow-md"
@@ -72,7 +72,7 @@ const NotepadActionBar = ({
           title="Notepad Workspace Active"
         >
           <Sun size={16} />
-        </div>
+        </div> */}
 
         {/* Note Title Input */}
         <input
@@ -129,7 +129,7 @@ const NotepadActionBar = ({
       </div>
 
       {/* Right Row: Auto Save Toggle + Status (Synced/Unsaved) + Actions */}
-      <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-800/40">
+      <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2.5 w-full pt-3 border-t border-slate-800/40">
         {/* Auto Save Toggle Switch */}
         <button
           type="button"

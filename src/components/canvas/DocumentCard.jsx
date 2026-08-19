@@ -15,7 +15,9 @@ import {
   FileArchive,
   Link as LinkIcon,
   Pin,
+  Loader,
 } from "lucide-react";
+import { useSignedUrl } from "../../lib/storage";
 
 const DocumentCard = ({
   item,
@@ -89,6 +91,10 @@ const DocumentCard = ({
   };
 
   const details = getFileDetails(item.type, item.title);
+  const signedUrl = useSignedUrl(item.url);
+
+  // While signing is in flight, use empty string to avoid showing an old public URL
+  const displayUrl = signedUrl || "";
 
   return (
     <div
@@ -158,11 +164,15 @@ const DocumentCard = ({
                 : "bg-slate-100 border-slate-200 group-hover:border-blue-500/40 shadow-inner"
             }`}
           >
-            <img
-              src={item.url}
-              alt={item.title || "Image"}
-              className="max-h-full max-w-full object-contain rounded-xl drop-shadow-lg group-hover:scale-105 transition-all duration-300"
-            />
+            {displayUrl ? (
+              <img
+                src={displayUrl}
+                alt={item.title || "Image"}
+                className="max-h-full max-w-full object-contain rounded-xl drop-shadow-lg group-hover:scale-105 transition-all duration-300"
+              />
+            ) : (
+              <Loader size={24} className="text-blue-400 animate-spin" />
+            )}
           </div>
         ) : (
           !codeMode && (
@@ -271,28 +281,59 @@ const DocumentCard = ({
           <>
             <div className="grid grid-cols-2 gap-3 w-full">
               <a
-                href={item.url}
+                href={displayUrl || "#"}
                 target="_blank"
                 rel="noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="flex items-center justify-center gap-2 py-3 px-4 rounded-2xl font-bold text-xs bg-blue-600 hover:bg-blue-550 text-white shadow-lg shadow-blue-600/25 active:scale-[0.97] transition-all duration-200"
-                title="View File"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!displayUrl) e.preventDefault();
+                }}
+                className={`flex items-center justify-center gap-2 py-3 px-4 rounded-2xl font-bold text-xs text-white shadow-lg shadow-blue-600/25 active:scale-[0.97] transition-all duration-200 ${
+                  displayUrl
+                    ? "bg-blue-600 hover:bg-blue-550 cursor-pointer"
+                    : "bg-slate-600 cursor-not-allowed opacity-60"
+                }`}
+                title={displayUrl ? "View File" : "Signing URL..."}
+                disabled={!displayUrl}
               >
-                <Eye size={16} className="shrink-0" />
-                <span>View</span>
+                {displayUrl ? (
+                  <>
+                    <Eye size={16} className="shrink-0" />
+                    <span>View</span>
+                  </>
+                ) : (
+                  <>
+                    <Loader size={14} className="shrink-0 animate-spin" />
+                    <span>Signing...</span>
+                  </>
+                )}
               </a>
 
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDownload(item.url, item.title);
+                  if (displayUrl) onDownload(displayUrl, item.title);
                 }}
-                className="flex items-center justify-center gap-2 py-3 px-4 rounded-2xl font-bold text-xs bg-emerald-600 hover:bg-emerald-550 text-white shadow-lg shadow-emerald-600/25 active:scale-[0.97] transition-all duration-200 cursor-pointer"
-                title="Download File"
+                className={`flex items-center justify-center gap-2 py-3 px-4 rounded-2xl font-bold text-xs text-white shadow-lg shadow-emerald-600/25 active:scale-[0.97] transition-all duration-200 ${
+                  displayUrl
+                    ? "bg-emerald-600 hover:bg-emerald-550 cursor-pointer"
+                    : "bg-slate-600 cursor-not-allowed opacity-60"
+                }`}
+                title={displayUrl ? "Download File" : "Signing URL..."}
+                disabled={!displayUrl}
               >
-                <Download size={16} className="shrink-0" />
-                <span>Download</span>
+                {displayUrl ? (
+                  <>
+                    <Download size={16} className="shrink-0" />
+                    <span>Download</span>
+                  </>
+                ) : (
+                  <>
+                    <Loader size={14} className="shrink-0 animate-spin" />
+                    <span>Signing...</span>
+                  </>
+                )}
               </button>
             </div>
 
@@ -389,25 +430,37 @@ const DocumentCard = ({
               <Trash2 size={16} />
             </button>
             <a
-              href={item.url}
+              href={displayUrl || "#"}
               target="_blank"
               rel="noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="p-2.5 text-blue-400 bg-blue-500/10 hover:bg-blue-500/25 border border-blue-500/20 rounded-xl transition"
-              title="View File"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!displayUrl) e.preventDefault();
+              }}
+              className={`p-2.5 rounded-xl transition border ${
+                displayUrl
+                  ? "text-blue-400 bg-blue-500/10 hover:bg-blue-500/25 border-blue-500/20"
+                  : "text-slate-500 bg-slate-500/10 border-slate-500/20 cursor-not-allowed opacity-50"
+              }`}
+              title={displayUrl ? "View File" : "Signing URL..."}
             >
-              <Eye size={16} />
+              {displayUrl ? <Eye size={16} /> : <Loader size={16} className="animate-spin" />}
             </a>
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onDownload(item.url, item.title);
+                if (displayUrl) onDownload(displayUrl, item.title);
               }}
-              className="p-2.5 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/25 border border-emerald-500/20 rounded-xl transition cursor-pointer"
-              title="Download File"
+              className={`p-2.5 rounded-xl transition border ${
+                displayUrl
+                  ? "text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/25 border-emerald-500/20 cursor-pointer"
+                  : "text-slate-500 bg-slate-500/10 border-slate-500/20 cursor-not-allowed opacity-50"
+              }`}
+              title={displayUrl ? "Download File" : "Signing URL..."}
+              disabled={!displayUrl}
             >
-              <Download size={16} />
+              {displayUrl ? <Download size={16} /> : <Loader size={16} className="animate-spin" />}
             </button>
           </div>
         )}

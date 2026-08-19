@@ -204,7 +204,7 @@ const CanvasEditor = ({
 
   return (
     <div
-      className={`flex-1 flex flex-col h-full min-h-full overflow-hidden transition-colors ${
+      className={`flex flex-col min-h-[calc(100vh-3.5rem)] md:min-h-screen transition-colors ${
         isDarkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-800"
       }`}
       onDragOver={handleDragOver}
@@ -265,7 +265,7 @@ const CanvasEditor = ({
       />
 
       {/* MAIN DOCUMENT AREA */}
-      <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
+      <div className="p-6">
         {/* BREADCRUMB NAVIGATION BAR WHEN INSIDE A FOLDER */}
         {activeFolderId && (
           <div
@@ -354,7 +354,7 @@ const CanvasEditor = ({
                   <Folder size={14} className="fill-amber-400/20" />
                   <span>Folders ({foldersList.length})</span>
                 </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4">
                   {foldersList.map((item) => {
                     const itemCountInside = items.filter(
                       (i) => i.folder_id === item.id

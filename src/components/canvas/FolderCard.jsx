@@ -159,14 +159,14 @@ const FolderCard = ({
           <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
         </button>
 
-        <div className="flex items-center justify-between px-1 text-[11px] font-extrabold">
+        <div className="grid grid-cols-3 gap-1 text-[11px] font-extrabold">
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               if (onTogglePin) onTogglePin(item.id);
             }}
-            className={`transition cursor-pointer flex items-center gap-1 px-2 py-1 rounded-xl ${
+            className={`min-w-0 transition cursor-pointer flex items-center justify-center gap-1 px-1 py-1 rounded-xl ${
               item.is_pinned
                 ? "text-amber-400 bg-amber-500/15 border border-amber-500/30 font-black"
                 : "text-slate-400 hover:text-amber-400"
@@ -183,7 +183,7 @@ const FolderCard = ({
               e.stopPropagation();
               onStartEditing(item);
             }}
-            className="text-slate-400 hover:text-amber-400 transition cursor-pointer flex items-center gap-1 px-2 py-1 rounded-xl"
+            className="min-w-0 text-slate-400 hover:text-amber-400 transition cursor-pointer flex items-center justify-center gap-1 px-1 py-1 rounded-xl"
             title="Rename folder"
           >
             <Edit3 size={12} />
@@ -196,7 +196,7 @@ const FolderCard = ({
               e.stopPropagation();
               onConfirmDelete(item.id);
             }}
-            className="text-slate-400 hover:text-red-400 transition cursor-pointer flex items-center gap-1 px-2 py-1 rounded-xl"
+            className="min-w-0 text-slate-400 hover:text-red-400 transition cursor-pointer flex items-center justify-center gap-1 px-1 py-1 rounded-xl"
             title="Delete folder"
           >
             <Trash2 size={12} />

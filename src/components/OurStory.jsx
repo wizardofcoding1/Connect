@@ -10,7 +10,7 @@ const OurStory = ({ isModal = false }) => {
   const divider = isModal ? "border-slate-200/80" : "border-slate-800/80";
 
   return (
-    <div className={`flex-1 overflow-y-auto p-6 md:p-8 min-h-full flex flex-col justify-start rounded-[2rem] select-text ${
+    <div className={`p-6 md:p-8 min-h-[calc(100vh-3.5rem)] md:min-h-screen flex flex-col justify-start rounded-[2rem] select-text ${
       isModal ? "bg-white text-slate-800" : "bg-slate-900 text-slate-100"
     }`}>
       <div className="max-w-3xl mx-auto w-full space-y-12">

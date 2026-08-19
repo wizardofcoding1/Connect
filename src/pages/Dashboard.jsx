@@ -681,6 +681,84 @@ const Dashboard = () => {
     }
   }, [items, generateAutoNoteTitle, generateAutoDocTitle]);
 
+  // Browsers expose the dropped/picked directory shape on webkitRelativePath ("Project/sub/a.pdf").
+  // Plain file picks have an empty string here, so they resolve to a bare file name at the destination.
+  const getRelativePath = (file) =>
+    file.webkitRelativePath || file.relativePath || file.name;
+
+  const getDirPath = (relPath) => {
+    const cut = relPath.lastIndexOf("/");
+    return cut === -1 ? "" : relPath.slice(0, cut);
+  };
+
+  // Materialize a folder row per directory level of an uploaded tree, reusing any
+  // folder that already exists at that destination. Returns dirPath -> folder id,
+  // where "" maps to the upload destination itself.
+  const ensureFolderTree = async (dirPaths, rootFolderId, knownItems) => {
+    const pathToId = new Map([["", rootFolderId || null]]);
+
+    // Expand every directory into its full ancestor chain, then create shallowest first
+    const allDirs = new Set();
+    for (const dirPath of dirPaths) {
+      if (!dirPath) continue;
+      const segments = dirPath.split("/");
+      for (let i = 1; i <= segments.length; i++) {
+        allDirs.add(segments.slice(0, i).join("/"));
+      }
+    }
+
+    const ordered = [...allDirs].sort(
+      (a, b) => a.split("/").length - b.split("/").length
+    );
+
+    const createdFolders = [];
+    let pool = knownItems;
+
+    for (const dirPath of ordered) {
+      const segments = dirPath.split("/");
+      const title = segments[segments.length - 1];
+      const parentId = pathToId.get(segments.slice(0, -1).join("/")) ?? null;
+
+      const existing = pool.find(
+        (i) =>
+          i.type === "folder" &&
+          (i.folder_id || null) === parentId &&
+          (i.title || "").trim().toLowerCase() === title.trim().toLowerCase()
+      );
+
+      if (existing) {
+        pathToId.set(dirPath, existing.id);
+        continue;
+      }
+
+      const { data, error } = await supabase
+        .from("items")
+        .insert([
+          {
+            title,
+            type: "folder",
+            user_id: user.id,
+            folder_id: parentId,
+          },
+        ])
+        .select();
+
+      if (error) throw error;
+
+      const created = data[0];
+      pathToId.set(dirPath, created.id);
+      createdFolders.push(created);
+      // Keep the lookup pool current so sibling levels in this same batch reuse it
+      pool = [created, ...pool];
+    }
+
+    if (createdFolders.length > 0) {
+      setItems((prev) => [...createdFolders, ...prev]);
+    }
+
+    return pathToId;
+  };
+
   const handleFileUpload = async (files, targetFolderId = null, skipOversizedCheck = false) => {
     const rawFileList = Array.isArray(files) ? files : [files];
     if (rawFileList.length === 0 || !user) return;
@@ -695,35 +773,47 @@ const Dashboard = () => {
         setOversizedModalData({
           oversizedFiles,
           validSizeFiles,
+          targetFolderId: targetFolderId || null,
         });
         return;
       }
     }
 
-    // Filter out duplicates scoped to target destination (root vs specific folder)
+    // Rebuild any dropped directory structure as real folder rows first, so each
+    // file can be filed against its own destination rather than landing flat.
+    let dirPathToFolderId;
+    try {
+      const dirPaths = rawFileList.map((f) => getDirPath(getRelativePath(f)));
+      dirPathToFolderId = await ensureFolderTree(dirPaths, targetFolderId, items);
+    } catch (e) {
+      setNotification({
+        type: "error",
+        title: "Error Creating Folders",
+        message: e.message,
+      });
+      return;
+    }
+
+    // Filter out duplicates scoped to each file's own resolved destination folder
     const existingDocTitles = new Set(
       items
-        .filter((i) => {
-          if (i.type === "note" || i.type === "link") return false;
-          if (targetFolderId) {
-            return i.folder_id === targetFolderId;
-          } else {
-            return !i.folder_id;
-          }
-        })
-        .map((i) => (i.title || "").toLowerCase())
+        .filter((i) => i.type !== "note" && i.type !== "link" && i.type !== "folder")
+        .map((i) => `${i.folder_id || ""}::${(i.title || "").toLowerCase()}`)
     );
 
     const fileList = [];
     const duplicateNames = [];
 
     for (const f of rawFileList) {
-      const docTitle = (f.relativePath || f.name).toLowerCase();
-      if (existingDocTitles.has(docTitle)) {
+      const relPath = getRelativePath(f);
+      const destFolderId = dirPathToFolderId.get(getDirPath(relPath)) ?? null;
+      const dedupeKey = `${destFolderId || ""}::${f.name.toLowerCase()}`;
+
+      if (existingDocTitles.has(dedupeKey)) {
         duplicateNames.push(f.name);
       } else {
-        fileList.push(f);
-        existingDocTitles.add(docTitle);
+        existingDocTitles.add(dedupeKey);
+        fileList.push({ file: f, relPath, destFolderId });
       }
     }
 
@@ -741,12 +831,12 @@ const Dashboard = () => {
     cancelledFileNamesRef.current = new Set();
 
     // Initialize progress tracking state for each file
-    const initialFilesState = fileList.map((f) => ({
-      name: f.name,
+    const initialFilesState = fileList.map(({ file }) => ({
+      name: file.name,
       progress: 0,
       status: "waiting",
       error: null,
-      size: f.size,
+      size: file.size,
       uploadedBytes: 0,
     }));
 
@@ -756,7 +846,7 @@ const Dashboard = () => {
       files: initialFilesState,
     });
 
-    const totalBytes = fileList.reduce((acc, f) => acc + f.size, 0);
+    const totalBytes = fileList.reduce((acc, { file }) => acc + file.size, 0);
     const uploadBatchTimestamp = Date.now();
 
     // Helper to dynamically update individual file status and recalculate aggregate progress
@@ -806,16 +896,15 @@ const Dashboard = () => {
     let activeUploads = 0;
 
     const runUpload = async (index) => {
-      const file = fileList[index];
+      const { file, relPath, destFolderId } = fileList[index];
       if (
         isUploadCancelledRef.current ||
         cancelledFileNamesRef.current.has(file.name)
       ) {
         return;
       }
-      const relativePath = file.relativePath || file.name;
       // Prepend user id and a shared batch timestamp directory to preserve folder shapes uniquely
-      const fileName = `${user.id}/${uploadBatchTimestamp}/${relativePath}`;
+      const fileName = `${user.id}/${uploadBatchTimestamp}/${relPath}`;
 
       updateFileProgress(index, { status: "uploading", progress: 0 });
 
@@ -900,7 +989,7 @@ const Dashboard = () => {
             type: fileType,
             url: publicUrl,
             user_id: user.id,
-            folder_id: targetFolderId || null,
+            folder_id: destFolderId || null,
           },
         ]);
 
@@ -1026,9 +1115,10 @@ const Dashboard = () => {
         onCloseOversizedModal={() => setOversizedModalData(null)}
         onProceedEligibleUpload={() => {
           const validFiles = oversizedModalData?.validSizeFiles || [];
+          const targetFolderId = oversizedModalData?.targetFolderId || null;
           setOversizedModalData(null);
           if (validFiles.length > 0) {
-            handleFileUpload(validFiles, true);
+            handleFileUpload(validFiles, targetFolderId, true);
           }
         }}
         showDeleteAccountModal={showDeleteAccountModal}

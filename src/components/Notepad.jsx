@@ -26,8 +26,8 @@ const Notepad = ({
   const [isSharing, setIsSharing] = useState(false);
   const [shareModalData, setShareModalData] = useState(null); // { code, url, title }
   const [selectedShareFormat, setSelectedShareFormat] = useState("txt");
-  const [selectedShareShell, setSelectedShareShell] = useState("bash");
-  const [copiedCmd, setCopiedCmd] = useState(false);
+  const [shareFileName, setShareFileName] = useState("note.txt");
+  const [copiedCmd, setCopiedCmd] = useState(null);
   const [copiedLink, setCopiedLink] = useState(false);
 
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(() => {
@@ -340,7 +340,7 @@ const Notepad = ({
         title,
       });
       setSelectedShareFormat("txt");
-      setSelectedShareShell("bash");
+      setShareFileName(`note_${code.toLowerCase()}.txt`);
       setNotification({
         type: "success",
         title: "CLI Share Ready",
@@ -472,27 +472,16 @@ const Notepad = ({
   }, [activeNote, tabs, drafts, getTabTitle]);
 
   // Compute live command
-  const getShareCommand = useCallback((code, format, shell) => {
+  const getShareCommand = useCallback((code, format) => {
     const extension = format === "txt" ? "" : `.${format}`;
     const url = `https://crosser.vercel.app/t/${code}${extension}`;
-    const filename = `note_${code.toLowerCase()}.${format}`;
-
-    if (shell === "bash") {
-      return `curl -sL ${url} > ${filename} && echo -e "\\n\\x1b[35m[!] Classified data synchronized successfully... 😈\\x1b[0m"`;
-    }
-    if (shell === "powershell") {
-      return `Invoke-RestMethod -Uri ${url} -OutFile ${filename}; Write-Host "[!] Classified data synchronized successfully... 😈" -ForegroundColor Cyan`;
-    }
-    if (shell === "cmd") {
-      return `curl -sL ${url} -o ${filename} && echo [!] Classified data synchronized successfully... 😈`;
-    }
-    return `curl -sL ${url} > ${filename}`;
+    return `curl -sL ${url}`;
   }, []);
 
-  const handleCopyCmd = useCallback((cmdText) => {
+  const handleCopyCmd = useCallback((cmdText, commandType) => {
     navigator.clipboard.writeText(cmdText);
-    setCopiedCmd(true);
-    setTimeout(() => setCopiedCmd(false), 2000);
+    setCopiedCmd(commandType);
+    setTimeout(() => setCopiedCmd(null), 2000);
   }, []);
 
   const handleCopyLink = useCallback((linkText) => {
@@ -655,7 +644,7 @@ const Notepad = ({
       {/* SHARE TO TERMINAL MODAL */}
       {shareModalData && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-800/80 p-6 md:p-8 rounded-[2.5rem] shadow-2xl max-w-lg w-full text-left animate-zoomIn text-slate-100 flex flex-col relative select-text">
+          <div className="bg-slate-900 border border-slate-800/80 p-6 md:p-8 rounded-[2.5rem] shadow-2xl max-w-lg max-h-[90vh] overflow-y-auto custom-scrollbar w-full text-left animate-zoomIn text-slate-100 flex flex-col relative select-text">
             
             <button
               onClick={() => setShareModalData(null)}
@@ -680,7 +669,7 @@ const Notepad = ({
             {/* FORMAT CHOOSER */}
             <div className="mb-5">
               <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-2">
-                1. Select Export Format
+                Select Export Format
               </label>
               <div className="flex flex-wrap gap-2">
                 {["txt", "md", "docx", "xlsx", "pdf"].map((fmt) => {
@@ -689,7 +678,10 @@ const Notepad = ({
                     <button
                       key={fmt}
                       type="button"
-                      onClick={() => setSelectedShareFormat(fmt)}
+                      onClick={() => {
+                        setSelectedShareFormat(fmt);
+                        setShareFileName((current) => `${current.replace(/\.[^.]+$/, "")}.${fmt}`);
+                      }}
                       className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer uppercase ${
                         isActive
                           ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
@@ -703,59 +695,61 @@ const Notepad = ({
               </div>
             </div>
 
-            {/* SHELL CHOOSER */}
+            {/* DOWNLOAD COMMAND */}
             <div className="mb-5">
               <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-2">
-                2. Select Terminal Shell
+                1. Download and save to a file
               </label>
-              <div className="flex gap-2">
-                {[
-                  { id: "bash", label: "Bash (Mac/Linux)" },
-                  { id: "powershell", label: "PowerShell (Windows)" },
-                  { id: "cmd", label: "Command Prompt (CMD)" },
-                ].map((sh) => {
-                  const isActive = selectedShareShell === sh.id;
-                  return (
-                    <button
-                      key={sh.id}
-                      type="button"
-                      onClick={() => setSelectedShareShell(sh.id)}
-                      className={`flex-1 px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                        isActive
-                          ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                          : "bg-slate-950 border border-slate-850 hover:bg-slate-800 text-slate-300"
-                      }`}
-                    >
-                      {sh.label.split(" ")[0]}
-                    </button>
-                  );
-                })}
+              <p className="text-[11px] text-slate-500 mb-2">
+                Change the filename below; the command updates automatically.
+              </p>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[11px] font-bold text-slate-400 shrink-0">Filename</span>
+                <input
+                  type="text"
+                  value={shareFileName}
+                  onChange={(e) => setShareFileName(e.target.value.replace(/[^a-zA-Z0-9._-]/g, "_"))}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500"
+                  aria-label="Downloaded note filename"
+                />
+              </div>
+              <div className="flex items-center gap-3 bg-slate-950 border border-slate-850 p-4 rounded-2xl select-text font-mono text-xs text-blue-300 leading-relaxed shadow-inner max-w-full">
+                <span className="min-w-0 flex-1 whitespace-normal break-all">{`${getShareCommand(shareModalData.code, selectedShareFormat)} > ${shareFileName || `note.${selectedShareFormat}`}`}</span>
+                <button
+                  onClick={() => handleCopyCmd(`${getShareCommand(shareModalData.code, selectedShareFormat)} > ${shareFileName || `note.${selectedShareFormat}`}`, "download")}
+                  className={`p-2 rounded-xl border shrink-0 transition ml-auto cursor-pointer ${copiedCmd === "download" ? "bg-emerald-600/10 border-emerald-500/30 text-emerald-400" : "bg-slate-900 border-slate-800 hover:bg-slate-850 text-slate-400 hover:text-white"}`}
+                  title="Copy download command"
+                >
+                  {copiedCmd === "download" ? <Check size={14} /> : <Clipboard size={14} />}
+                </button>
               </div>
             </div>
 
-            {/* SYNC COMMAND */}
+            {/* PREVIEW COMMAND */}
             <div className="mb-5">
               <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-2">
-                3. Run CLI command on target device
+                2. Preview data in the terminal
               </label>
-              <div className="flex items-center gap-2 bg-slate-950 border border-slate-850 p-4 rounded-2xl select-text relative font-mono text-xs text-blue-300 leading-relaxed shadow-inner max-w-full overflow-x-auto">
-                <span className="whitespace-pre">
-                  {getShareCommand(shareModalData.code, selectedShareFormat, selectedShareShell)}
+              <p className="text-[11px] text-slate-500 mb-2">Displays the note without creating a file.</p>
+              <div className="flex items-center gap-3 bg-slate-950 border border-slate-850 p-4 rounded-2xl select-text font-mono text-xs text-blue-300 leading-relaxed shadow-inner max-w-full">
+                <span className="min-w-0 flex-1 whitespace-normal break-all">
+                  {getShareCommand(shareModalData.code, selectedShareFormat)}
                 </span>
                 <button
                   onClick={() =>
                     handleCopyCmd(
-                      getShareCommand(shareModalData.code, selectedShareFormat, selectedShareShell)
+                      getShareCommand(shareModalData.code, selectedShareFormat),
+                      "preview"
                     )
                   }
                   className={`p-2 rounded-xl border shrink-0 transition ml-auto cursor-pointer ${
-                    copiedCmd
+                    copiedCmd === "preview"
                       ? "bg-emerald-600/10 border-emerald-500/30 text-emerald-400"
                       : "bg-slate-900 border-slate-800 hover:bg-slate-850 text-slate-400 hover:text-white"
                   }`}
-                  title="Copy command to clipboard"
+                  title="Copy preview command"
                 >
-                  {copiedCmd ? <Check size={14} /> : <Clipboard size={14} />}
+                  {copiedCmd === "preview" ? <Check size={14} /> : <Clipboard size={14} />}
                 </button>
               </div>
             </div>
@@ -763,10 +757,11 @@ const Notepad = ({
             {/* SHORT URL */}
             <div className="mb-6">
               <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-2">
-                Short share URL
+                3. Share the URL directly
               </label>
-              <div className="flex items-center gap-2 bg-slate-950 border border-slate-850 px-4 py-3 rounded-2xl select-text font-mono text-xs text-slate-300">
-                <span className="truncate">{`${shareModalData.url}${selectedShareFormat === "txt" ? "" : `.${selectedShareFormat}`}`}</span>
+              <p className="text-[11px] text-slate-500 mb-2">Send this link to someone so they can open or download the shared note.</p>
+              <div className="flex items-center gap-3 bg-slate-950 border border-slate-850 px-4 py-3 rounded-2xl select-text font-mono text-xs text-slate-300">
+                <span className="min-w-0 flex-1 break-all">{`${shareModalData.url}${selectedShareFormat === "txt" ? "" : `.${selectedShareFormat}`}`}</span>
                 <button
                   onClick={() =>
                     handleCopyLink(
