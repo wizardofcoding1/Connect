@@ -7,6 +7,7 @@ const Notepad = lazy(() => import("../Notepad"));
 const CanvasEditor = lazy(() => import("../CanvasEditor"));
 const OurStory = lazy(() => import("../OurStory"));
 const LinkVault = lazy(() => import("../LinkVault"));
+const LargeFilesView = lazy(() => import("../LargeFilesView"));
 
 const SubcomponentLoader = () => (
   <div className="flex-1 flex flex-col items-center justify-center bg-slate-900 text-slate-400 py-20">
@@ -71,6 +72,11 @@ const WorkspaceView = ({
               onAddLink={addLinkItem}
               onDeleteLink={deleteItem}
               onEditLink={editLinkItem}
+              isDarkMode={isDarkMode}
+            />
+          ) : viewType === "largefiles" ? (
+            <LargeFilesView
+              items={items}
               isDarkMode={isDarkMode}
             />
           ) : (
