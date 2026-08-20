@@ -2,6 +2,10 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/api/large-file-upload/:path*",
+      "destination": "/api/large-file-upload?__path=:path*"
+    },
+    {
       "source": "/t/:code.:ext",
       "destination": "/api/t?code=:code&ext=:ext"
     },

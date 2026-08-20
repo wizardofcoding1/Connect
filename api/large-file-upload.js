@@ -14,14 +14,23 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Extract the path after /api/large-file-upload
-    // /api/large-file-upload/upload-to-release → /api/upload-to-release
-    // Split the query off first: the path capture would otherwise swallow it
-    // and it would then be appended a second time.
-    const [rawPath, queryString = ''] = req.url.split('?');
-    const pathMatch = rawPath.match(/\/api\/large-file-upload(.*)$/);
-    const targetPath = pathMatch ? pathMatch[1] : '';
+    // A single function file only answers its exact route, so vercel.json
+    // rewrites sub-paths here and hands the real path over as __path. Reading
+    // that beats parsing req.url, which the rewrite may have already replaced.
+    const [rawPath, rawQuery = ''] = req.url.split('?');
+    const params = new URLSearchParams(rawQuery);
 
+    let targetPath;
+    if (params.has('__path')) {
+      targetPath = '/' + params.get('__path');
+      params.delete('__path');
+    } else {
+      // Direct hit without the rewrite (e.g. local vercel dev)
+      const pathMatch = rawPath.match(/\/api\/large-file-upload(.*)$/);
+      targetPath = pathMatch ? pathMatch[1] : '';
+    }
+
+    const queryString = params.toString();
     const backendUrl = `${BACKEND_URL}/api${targetPath}${queryString ? '?' + queryString : ''}`;
 
     console.log(`[Proxy] ${req.method} ${req.url} → ${backendUrl}`);
