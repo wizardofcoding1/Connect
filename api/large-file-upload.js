@@ -4,7 +4,9 @@
  * Frontend calls /api/large-file-upload/* → forwarded to backend /api/*
  */
 export default async function handler(req, res) {
-  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+  // Tolerate a trailing slash on the env var: "host/" + "/api" yields "//api",
+  // which Express treats as a different route and 404s.
+  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL?.replace(/\/+$/, '');
 
   if (!BACKEND_URL) {
     return res.status(500).json({
