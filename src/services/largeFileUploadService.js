@@ -1,13 +1,24 @@
 /**
- * Service for large file uploads via backend proxy
- * - Production: Uses same-origin /api/* endpoints (hides backend URL)
- * - Development: Calls backend directly for local testing
+ * Service for large file uploads.
+ *
+ * Small JSON calls (list, rename, delete, sign) go through the same-origin
+ * proxy, which keeps the backend URL out of those requests.
+ *
+ * The upload itself cannot: a Vercel serverless function rejects request
+ * bodies over ~4.5MB with 413, so a multi-hundred-MB file has to reach the
+ * backend directly. Credentials still never leave the server — the browser
+ * only learns an address, and every route behind it still requires auth.
  */
 
 const isDev = import.meta.env.DEV;
-const API_BASE = isDev
-  ? (import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000')
-  : '/api/large-file-upload';
+
+const stripSlash = (url) => (url || '').replace(/\/+$/, '');
+
+// The backend's real origin, used in both dev and production
+const DIRECT_BASE =
+  stripSlash(import.meta.env.VITE_BACKEND_URL) || 'http://localhost:5000';
+
+const API_BASE = isDev ? DIRECT_BASE : '/api/large-file-upload';
 
 /**
  * Upload file to backend → GitHub Releases (via secure proxy)
@@ -26,7 +37,7 @@ export async function uploadLargeFile(file, tabId = null, onProgress = null) {
   const { supabase } = await import('../supabaseClient');
   const { data: { session } } = await supabase.auth.getSession();
 
-  if (!session?.user?.id) {
+  if (!session?.access_token) {
     throw new Error('Not authenticated');
   }
 
@@ -76,12 +87,11 @@ export async function uploadLargeFile(file, tabId = null, onProgress = null) {
       reject(new Error('Upload cancelled'));
     });
 
-    // In dev: append /api; in prod: use proxy base as-is
-    const url = isDev ? `${API_BASE}/api/upload-to-release` : `${API_BASE}/upload-to-release`;
-
+    // Always direct to the backend, never through the proxy: Vercel caps
+    // serverless request bodies at ~4.5MB and answers 413 above that.
     // Note: Don't set Content-Type header - browser will set it with boundary for FormData
-    xhr.open('POST', url);
-    xhr.setRequestHeader('Authorization', `Bearer ${session.user.id}`);
+    xhr.open('POST', `${DIRECT_BASE}/api/upload-to-release`);
+    xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
     xhr.send(formData);
 
     uploadLargeFile.currentXhr = xhr;
@@ -97,7 +107,7 @@ export async function getLargeFilesByTab(tabId) {
   const { supabase } = await import('../supabaseClient');
   const { data: { session } } = await supabase.auth.getSession();
 
-  if (!session?.user?.id) {
+  if (!session?.access_token) {
     throw new Error('Not authenticated');
   }
 
@@ -107,7 +117,7 @@ export async function getLargeFilesByTab(tabId) {
   const response = await fetch(url, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${session.user.id}`,
+      'Authorization': `Bearer ${session.access_token}`,
       'Content-Type': 'application/json'
     }
   });
@@ -130,7 +140,7 @@ export async function deleteLargeFile(fileId) {
   const { supabase } = await import('../supabaseClient');
   const { data: { session } } = await supabase.auth.getSession();
 
-  if (!session?.user?.id) {
+  if (!session?.access_token) {
     throw new Error('Not authenticated');
   }
 
@@ -140,7 +150,7 @@ export async function deleteLargeFile(fileId) {
   const response = await fetch(url, {
     method: 'DELETE',
     headers: {
-      'Authorization': `Bearer ${session.user.id}`,
+      'Authorization': `Bearer ${session.access_token}`,
       'Content-Type': 'application/json'
     }
   });
@@ -188,7 +198,7 @@ export async function getStreamUrl(fileId) {
   const { supabase } = await import('../supabaseClient');
   const { data: { session } } = await supabase.auth.getSession();
 
-  if (!session?.user?.id) {
+  if (!session?.access_token) {
     throw new Error('Not authenticated');
   }
 
@@ -199,7 +209,7 @@ export async function getStreamUrl(fileId) {
   const response = await fetch(url, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${session.user.id}`,
+      'Authorization': `Bearer ${session.access_token}`,
       'Content-Type': 'application/json'
     }
   });
@@ -225,7 +235,7 @@ export async function renameLargeFile(fileId, title) {
   const { supabase } = await import('../supabaseClient');
   const { data: { session } } = await supabase.auth.getSession();
 
-  if (!session?.user?.id) {
+  if (!session?.access_token) {
     throw new Error('Not authenticated');
   }
 
@@ -234,7 +244,7 @@ export async function renameLargeFile(fileId, title) {
   const response = await fetch(url, {
     method: 'PATCH',
     headers: {
-      'Authorization': `Bearer ${session.user.id}`,
+      'Authorization': `Bearer ${session.access_token}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({ title })
