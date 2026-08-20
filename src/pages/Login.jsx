@@ -1,15 +1,28 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import { User, ArrowRight, X, Sparkles } from "lucide-react";
+import { User, Lock, ArrowRight, X, Sparkles, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import OurStory from "../components/OurStory";
+import { usernameToEmail, normalizeUsername, readableAuthError } from "../lib/auth";
 
 const Login = () => {
   const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isStoryOpen, setIsStoryOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Set after a successful registration redirect
+  const justRegistered = location.state?.registered;
+
+  useEffect(() => {
+    if (justRegistered && location.state?.username) {
+      setUsername(location.state.username);
+    }
+  }, [justRegistered, location.state]);
 
   // Set dynamic browser document title based on modal state
   useEffect(() => {
@@ -31,47 +44,34 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const cleanUsername = username.trim().toLowerCase();
-    if (!cleanUsername) return;
+    const cleanUsername = normalizeUsername(username);
+    if (!cleanUsername || !password) return;
 
     setLoading(true);
     setError(null);
 
-    // Auto-generate a consistent email and password based on the username
-    const fakeEmail = `${cleanUsername}@connectapp.com`;
-    const staticPassword = "PermanentPassword123!";
-
     try {
-      // 1. Try to Login
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: fakeEmail,
-        password: staticPassword,
+      // Sign in only. Accounts are created on the register page, so a typo in
+      // the username can no longer silently create a second account.
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: usernameToEmail(cleanUsername),
+        password,
       });
 
-      if (signInError) {
-        // 2. If login fails, try to Register (Sign Up)
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: fakeEmail,
-          password: staticPassword,
-          options: {
-            data: { display_name: cleanUsername },
-          },
-        });
+      if (signInError) throw signInError;
 
-        if (signUpError) throw signUpError;
-        
-        // Signed up successfully
-        navigate("/", { replace: true });
-      } else {
-        // Logged in successfully
-        navigate("/", { replace: true });
-      }
+      navigate("/", { replace: true });
     } catch (err) {
-      setError(err.message || "Authentication failed. Please try again.");
+      setError(readableAuthError(err));
     } finally {
       setLoading(false);
     }
   };
+
+  const inputClass =
+    "w-full pl-11 pr-4 py-4 bg-blue-50/50 border-2 border-blue-100 text-blue-900 placeholder-blue-400 rounded-2xl outline-none transition-all duration-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-sm font-semibold focus:bg-white select-text";
+  const iconClass =
+    "absolute inset-y-0 left-0 flex items-center pl-4 text-blue-400 group-focus-within:text-blue-600 transition-colors";
 
   return (
     <main className="relative flex items-center justify-center min-h-screen bg-blue-500 overflow-hidden p-4 select-none">
@@ -81,7 +81,7 @@ const Login = () => {
 
       {/* 2. Login Box Container - Pristine White Card on Blue-500 Background */}
       <div className="relative bg-white/95 backdrop-blur-2xl border-2 border-blue-500/25 p-8 md:p-12 rounded-[2.5rem] shadow-[0_25px_60px_rgba(29,78,216,0.3)] w-full max-w-md text-center transition-all duration-300 hover:border-blue-500/40 hover:shadow-[0_30px_70px_rgba(29,78,216,0.4)] z-10">
-        
+
         {/* Logo and Brand Header */}
         <div className="flex flex-col items-center mb-8">
           <div className="relative mb-4 group">
@@ -101,6 +101,18 @@ const Login = () => {
           </p>
         </div>
 
+        {justRegistered && !error && (
+          <div className="mb-6 p-4 rounded-2xl bg-green-50 border border-green-200 text-green-700 text-xs text-left leading-relaxed flex items-start gap-2">
+            <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-green-600" />
+            <span>
+              <span className="font-bold uppercase tracking-wider text-[9px] block mb-0.5">
+                Account created
+              </span>
+              Sign in with your new username and password.
+            </span>
+          </div>
+        )}
+
         {error && (
           <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-600 text-xs text-left animate-shake leading-relaxed">
             <span className="font-bold uppercase tracking-wider text-[9px] block mb-0.5 text-red-700">Authentication Failed</span>
@@ -111,29 +123,56 @@ const Login = () => {
         {/* Input Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative group">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-blue-400 group-focus-within:text-blue-600 transition-colors">
+            <span className={iconClass}>
               <User size={18} />
             </span>
             <input
               type="text"
               placeholder="Username"
-              className="w-full pl-11 pr-4 py-4 bg-blue-50/50 border-2 border-blue-100 text-blue-900 placeholder-blue-400 rounded-2xl outline-none transition-all duration-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 text-sm font-semibold focus:bg-white select-text"
+              className={inputClass}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck="false"
               required
               disabled={loading}
             />
           </div>
 
+          <div className="relative group">
+            <span className={iconClass}>
+              <Lock size={18} />
+            </span>
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              className={`${inputClass} pr-12`}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+              disabled={loading}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute inset-y-0 right-0 flex items-center pr-4 text-blue-400 hover:text-blue-600 transition-colors cursor-pointer"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+
           <button
             type="submit"
-            disabled={loading || !username.trim()}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white py-4 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/35 active:scale-[0.98] border border-blue-500/10"
+            disabled={loading || !username.trim() || !password}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-60 text-white py-4 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/35 active:scale-[0.98] border border-blue-500/10"
           >
             {loading ? (
               <span className="flex items-center gap-2 text-white font-bold">
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                Connecting...
+                Signing in...
               </span>
             ) : (
               <>
@@ -143,9 +182,15 @@ const Login = () => {
           </button>
         </form>
 
-        {/* Register Hint */}
+        {/* Register Link */}
         <div className="mt-8 text-center text-xs text-blue-500/80 font-medium">
-          First-time username will automatically register a new account.
+          New here?{" "}
+          <Link
+            to="/register"
+            className="text-blue-700 font-bold hover:text-blue-900 transition duration-200"
+          >
+            Create an account
+          </Link>
         </div>
 
         {/* Story Trigger Button */}

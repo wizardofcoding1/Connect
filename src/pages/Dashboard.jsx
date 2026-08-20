@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import Sidebar from "../components/Sidebar";
+import ChangePasswordModal from "../components/ChangePasswordModal";
 import MobileTopBar from "../components/dashboard/MobileTopBar";
 import DashboardModals from "../components/dashboard/DashboardModals";
 import WorkspaceView from "../components/dashboard/WorkspaceView";
@@ -19,6 +20,7 @@ const Dashboard = () => {
     files: [],
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [notification, setNotification] = useState(null);
@@ -1126,6 +1128,12 @@ const Dashboard = () => {
         onConfirmDeleteAccount={handleDeleteAccount}
       />
 
+      <ChangePasswordModal
+        isOpen={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+        isDarkMode={isDarkMode}
+      />
+
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
@@ -1148,6 +1156,10 @@ const Dashboard = () => {
           }}
           viewType={viewType}
           onLogout={handleLogout}
+          onChangePassword={() => {
+            setShowChangePassword(true);
+            setIsSidebarOpen(false);
+          }}
           onDeleteAccount={() => setShowDeleteAccountModal(true)}
           isDarkMode={isDarkMode}
           setIsDarkMode={setIsDarkMode}

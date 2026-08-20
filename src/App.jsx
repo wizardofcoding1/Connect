@@ -9,6 +9,7 @@ import LoadingScreen from "./components/LoadingScreen";
 
 // Lazy-load routes for optimized initial bundle sizes
 const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -17,8 +18,9 @@ const App = () => {
     <Router>
       <Suspense fallback={<LoadingScreen />}>
         <Routes>
-          {/* Public Login Route */}
+          {/* Public Auth Routes */}
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
           {/* Protected Application Routes */}
           <Route element={<ProtectedRoute />}>

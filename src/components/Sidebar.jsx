@@ -9,6 +9,7 @@ import {
   Sun,
   Moon,
   Package,
+  KeyRound,
 } from "lucide-react";
 
 const Sidebar = ({
@@ -16,6 +17,7 @@ const Sidebar = ({
   setViewType,
   viewType,
   onLogout,
+  onChangePassword,
   onDeleteAccount,
   isDarkMode = true,
   setIsDarkMode,
@@ -216,6 +218,25 @@ const Sidebar = ({
           isDarkMode ? "border-slate-800/80" : "border-slate-200"
         }`}
       >
+        <button
+          onClick={onChangePassword}
+          className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 font-semibold text-xs group active:scale-[0.98] cursor-pointer ${
+            isDarkMode
+              ? "text-slate-400 hover:bg-slate-800/60 hover:text-white"
+              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+          }`}
+        >
+          <KeyRound
+            size={16}
+            className={`transition-colors ${
+              isDarkMode
+                ? "text-slate-400 group-hover:text-white"
+                : "text-slate-500 group-hover:text-slate-900"
+            }`}
+          />
+          Change Password
+        </button>
+
         <button
           onClick={onLogout}
           className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 font-semibold text-xs group active:scale-[0.98] cursor-pointer ${
